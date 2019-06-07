@@ -23,9 +23,7 @@ impl BlobResource {
         }
     }
 
-    fn entry_result_to_blobdesc(entry_result: Result<DirEntry, std::io::Error>) -> Option<BlobDesc> {
-        let entry = entry_result.ok()?;
-
+    fn entry_to_blobdesc(entry: DirEntry) -> Option<BlobDesc> {
         if !entry.file_type().ok()?.is_file() {
             None
         } else {
@@ -38,7 +36,9 @@ impl BlobResource {
 
     fn list_blobs(&self) -> Result<impl Iterator<Item=BlobDesc>, std::io::Error> {
         fs::read_dir(&self.root_path)
-            .map(|dir| dir.filter_map(Self::entry_result_to_blobdesc))
+            .map(|dir| dir.filter_map(|entry| {
+                Self::entry_to_blobdesc(entry.ok()?)
+            }))
     }
 }
 
