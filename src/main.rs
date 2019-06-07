@@ -24,17 +24,16 @@ impl BlobResource {
     }
 
     fn entry_result_to_blobdesc(entry_result: Result<DirEntry, std::io::Error>) -> Option<BlobDesc> {
-        entry_result.map(|e: DirEntry| -> Option<BlobDesc> {
-            if !e.file_type().map(|t| t.is_file()).unwrap_or(false) {
-                return None
-            }
-            let name = e.path().file_name()?.to_str()?.to_string();
-            let size = e.metadata().map(|m| m.len()).unwrap_or(0);
+        let entry = entry_result.ok()?;
+
+        if !entry.file_type().ok()?.is_file() {
+            None
+        } else {
             Some(BlobDesc {
-                name,
-                size,
+                name: entry.path().file_name()?.to_str()?.to_string(),
+                size: entry.metadata().ok()?.len(),
             })
-        }).ok().unwrap_or(None)
+        }
     }
 
     fn list_blobs(&self) -> Result<impl Iterator<Item=BlobDesc>, std::io::Error> {
@@ -59,11 +58,7 @@ impl_web! {
         #[get("/list")]
         #[content_type("application/json")]
         fn list(&self) -> Result<Vec<BlobDesc>, std::io::Error> {
-        self.list_blobs().map(|x| x.collect())
-            /*match self.list_blobs() {
-                Ok(x) => Ok(x.collect()),
-                Err(x) => Err(x)
-            }*/
+            self.list_blobs().map(|x| x.collect())
         }
 
         #[get("/file")]
